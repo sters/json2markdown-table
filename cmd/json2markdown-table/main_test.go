@@ -17,22 +17,34 @@ func Test_do(t *testing.T) {
 		{
 			name: "simple",
 			r:    strings.NewReader(`[{"foo": 1, "bar": 2}, {"foo": 3, "bar": 4}]`),
-			wantResult: `|bar|foo|
+			wantResult: `|foo|bar|
 |-|-|
-|2|1|
-|4|3|
+|1|2|
+|3|4|
 `,
 			wantErr: false,
 		},
 		{
 			name: "mixed",
-			r:    strings.NewReader(`[{"foo": 1, "bar": 2}, {"baz": 3, "boo": 4}]`),
-			wantResult: `|bar|baz|boo|foo|
+			r:    strings.NewReader(`[{"foo": "foo", "bar": "bar"}, {"baz": "baz", "boo": "boo"}]`),
+			wantResult: `|foo|bar|baz|boo|
 |-|-|-|-|
-|2|||1|
-||3|4||
+|foo|bar|||
+|||baz|boo|
 `,
 			wantErr: false,
+		},
+		{
+			name:       "invalid json",
+			r:          strings.NewReader(`[`),
+			wantResult: "",
+			wantErr:    true,
+		},
+		{
+			name:       "invalid not slice map",
+			r:          strings.NewReader(`{}`),
+			wantResult: "",
+			wantErr:    true,
 		},
 	}
 	for _, tt := range tests {

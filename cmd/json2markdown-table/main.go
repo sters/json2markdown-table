@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sort"
 
+	mapslice "github.com/mickep76/mapslice-json"
 	"github.com/morikuni/failure"
+	"github.com/spf13/cast"
 )
 
 func main() {
@@ -16,30 +17,23 @@ func main() {
 	}
 }
 
-type dataInner map[string]interface{}
-type data []dataInner
-
 func do(r io.Reader, w io.Writer) error {
-	var read data
-
-	decoder := json.NewDecoder(r)
-	decoder.UseNumber()
-	if err := decoder.Decode(&read); err != nil {
+	data := []mapslice.MapSlice{}
+	if err := json.NewDecoder(r).Decode(&data); err != nil {
 		return failure.Wrap(err)
 	}
 
-	keys := make([]string, 0, len(read[0]))
-	added := map[string]struct{}{}
-	for _, inner := range read {
-		for k := range inner {
-			if _, ok := added[k]; ok {
+	var keys []interface{}
+	added := map[interface{}]struct{}{}
+	for _, inner := range data {
+		for _, item := range inner {
+			if _, ok := added[item.Key]; ok {
 				continue
 			}
-			keys = append(keys, k)
-			added[k] = struct{}{}
+			keys = append(keys, item.Key)
+			added[item.Key] = struct{}{}
 		}
 	}
-	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
 
 	for _, k := range keys {
 		fmt.Fprintf(w, `|%s`, k)
@@ -51,13 +45,17 @@ func do(r io.Reader, w io.Writer) error {
 	}
 	fmt.Fprintf(w, "|\n")
 
-	for _, inner := range read {
+	for _, inner := range data {
 		for _, k := range keys {
-			v, ok := inner[k]
-			if !ok {
-				v = ""
+			var found interface{} = ""
+			for _, item := range inner {
+				if item.Key == k {
+					found = item.Value
+					break
+				}
 			}
-			fmt.Fprintf(w, `|%s`, v)
+
+			fmt.Fprintf(w, "|%s", cast.ToString(found))
 		}
 		fmt.Fprintf(w, "|\n")
 	}
