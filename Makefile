@@ -11,7 +11,7 @@ bootstrap-tools:
 
 .PHONY: run
 run:
-	go run cmd/command/main.go
+	go run cmd/json2markdown-table/main.go
 
 .PHONY: lint
 lint:
